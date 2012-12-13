@@ -20,32 +20,42 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 class RequestHandler(BaseHTTPRequestHandler):
 
-    def do_GET(self):
+  def do_GET(self):
 
-        # List of URLs accepted, and what command to run when we get them.
-        commands = {
-            '/shutdown' : 'shutdown.exe -s',
-            '/reboot' : 'shutdown.exe -r',
-            '/sleep' : 'shutdown.exe -h',
-            '/hibernate' : 'shutdown.exe -h',
-            '/test' : None,
-        }
+    # List of URLs accepted, and what command to run when we get them.
+    commands = {
+      '/shutdown' : 'shutdown.exe -s',
+      '/reboot' : 'shutdown.exe -r',
+      '/sleep' : 'shutdown.exe -h',
+      '/hibernate' : 'shutdown.exe -h',
+      '/test' : None,
+    }
 
-        try:
-            if self.path in commands.keys():
-                self.send_response(200, 'Request Received')
-                if commands[self.path]:
-                    result = subprocess.call(commands[self.path], shell=True)
-                
-        except IOError:
-            self.send_error(404,'File Not Found: %s' % self.path)
+    try:
+      if self.path in commands.keys():
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+
+        # Don't really do anything for /test
+        if not commands[self.path]:
+          self.wfile.write("Success.")
+          self.wfile.close()
+          return
+
+        self.wfile.write("Attempting...")
+        self.wfile.close()
+        subprocess.call(commands[self.path], shell=True)
+
+    except IOError:
+      self.send_error(404,'File Not Found: %s' % self.path)
 
 def main():
-    try:
-        server = HTTPServer(('', 80), RequestHandler)
-        server.serve_forever()
-    except KeyboardInterrupt:
-        server.socket.close()
+  try:
+    server = HTTPServer(('', 80), RequestHandler)
+    server.serve_forever()
+  except KeyboardInterrupt:
+    server.socket.close()
 
 if __name__ == '__main__':
-    main()
+  main()
